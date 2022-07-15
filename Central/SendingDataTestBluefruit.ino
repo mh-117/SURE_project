@@ -124,7 +124,7 @@ void loop(){
   int buff[dataLen];  // data buffer
   String dataStr;
   int j = 0;
-  for (int i = dataLen - 1; i >= 0; i--) {     // (note: bitRead() starts from LSB)
+  for (int i = dataLen - 1; i >= 0; i--) {     // (note: bitRead() starts from LSB) (using bitRead() : https://www.arduino.cc/reference/en/language/functions/bits-and-bytes/bitread/)
     buff[j] = bitRead(startData,i);
     dataStr = dataStr + buff[j];
     j++;
