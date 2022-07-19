@@ -1,6 +1,18 @@
 #include <ArduinoBLE.h>
 
 // modified from the rawDataAdvertising example from 
+/**********************************************************
+
+This code initiates a connection between the Arduino Nano and 
+the LightBlue Bluetooth App
+
+- Continuous flow of data (that increments every second) from 
+the nano
+- Sends a notification to the phone app that values are changing
+- Nano can receive a command from the LightBlue app to indicate
+when the device should start sending data over bluetooth
+
+**********************************************************/
 
 BLEService myService("fff0");
 BLECharacteristic myCharacteristic("fff1", BLERead | BLEBroadcast | BLENotify, 2);  // must add notify for the cloud service to save the data
