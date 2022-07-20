@@ -34,6 +34,9 @@ BLEUart bleuart;
 // Central uart client
 BLEClientUart clientUart;
 
+char startCmd[5]; //etc. P1 or P10
+boolean newConnection = true; //boolean to signal when a new connection is being made 
+
 void setup()
 {
   Serial.begin(115200);
@@ -156,13 +159,33 @@ void prph_bleuart_rx_callback(uint16_t conn_handle)
   Serial.print("[Prph] RX: ");
   Serial.println(str);  
 
+  // -------------- START COMMAND: Extracting the start command from Mobile --------------
+  for(int i = 0; i < sizeof(str); i++) {
+    if(str[i] != 0) {
+      startCmd[i] = (char)str[i];
+    }    
+  }
+  
+  // if P1, put \0 in 3rd slot. if P10, put \0 in 4th slot
+  if(startCmd[2] == 0) {
+    startCmd[2] = '\0';
+  } else if (startCmd[3] == 0) {
+    startCmd[3] = '\0';
+  } else if (startCmd[4] == 0) {
+    startCmd[4] = '\0';
+  }
+
+  // -------------- START COMMAND: Extracting the start command from Mobile --------------
+
+  // Forward command from Mobile to our peripheral
   if ( clientUart.discovered() )
   {
-    clientUart.print(str);
+    clientUart.print(startCmd);
   }else
   {
     bleuart.println("[Prph] Central role not connected");
   }
+  memset(startCmd,0,sizeof(startCmd));
 }
 
 /*------------------------------------------------------------------*/
@@ -185,34 +208,34 @@ void cent_connect_callback(uint16_t conn_handle)
   connection->getPeerName(peer_name, sizeof(peer_name));
 
 
-  // -------------- so far the only section that has been modified --------------
+  /*
+  // -------------- START COMMAND: Choosing a specific peripheral to receive data from --------------
   // trying to extract the actual name and not the extra spaces that were allocated for it
-  char device[20];
-  char str[20] = "Arduino (Peripheral";
+  char device[4];
+  //char str[20] = "Arduino (Peripheral";
   for(int i = 0; i < sizeof(peer_name); i++) {
     if(peer_name[i] != 0) {
       device[i] = (char)peer_name[i];
-    }
-    device[19] = '\0';  // need to explicitly add in the null terminator 
+    }    
   }
+  // if P1, put \0 in 3rd slot. if P10, put \0 in 4th slot
+  if(device[2] = 0) {
+    device[2] = '\0';
+  } else if (device[3] = 0) {
+    device[3] = '\0';
+  }
+  */
   
   Serial.print("[Cent] Connected to ");
   Serial.println(peer_name);
   
-  if (strcmp(device,str) == 0) {
-    Serial.println("Correct peripheral! Continuing");
-    if ( clientUart.discover(conn_handle) ) {
-      // Enable TXD's notify
+  if ( clientUart.discover(conn_handle) ) {
+    // Enable TXD's notify
     clientUart.enableTXD();
-    }else{
-      // disconnect since we couldn't find bleuart service
-      Bluefruit.disconnect(conn_handle);
-    }  
-  } else {
-    Serial.println("Wrong peripheral. Disconnecting...");
+  }else{
+    // disconnect since we couldn't find bleuart service
     Bluefruit.disconnect(conn_handle);
-  }
-  
+  }  
 }
 
 void cent_disconnect_callback(uint16_t conn_handle, uint8_t reason)
@@ -231,7 +254,7 @@ void cent_disconnect_callback(uint16_t conn_handle, uint8_t reason)
 void cent_bleuart_rx_callback(BLEClientUart& cent_uart)
 {
   char str[20+1] = { 0 }; 
-  cent_uart.read(str, 20);    
+  cent_uart.read(str, 20);   
       
   Serial.print("[Cent] RX: ");
   Serial.println(str);
@@ -241,6 +264,7 @@ void cent_bleuart_rx_callback(BLEClientUart& cent_uart)
     // Forward data from our peripheral to Mobile
     bleuart.print( str );
     bleuart.print(" ");   // provide a gap in between the data
+    bleuart.println();    // use this to create columns for the data
   }else
   {
     // response with no prph message
