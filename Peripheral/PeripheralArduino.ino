@@ -3,14 +3,6 @@
  The following code is built from the SerialPassThrough example from the
  HardwareBLESerial library: https://github.com/Uberi/Arduino-HardwareBLESerial
  File->Examples->HardwareBLESerial->SerialPassThrough
- 
- 
- This code initiates a bluetooth connection with the Adafruit Bluefruit
- hardware.
- 
- - Define device name in the beginAndSetup function
- - Send data (data must be in a string form for the bluefruit to be able
- to receive it)
 
 
 *********************************************************************/
@@ -24,11 +16,14 @@ HardwareBLESerial &bleSerial = HardwareBLESerial::getInstance();
 uint16_t startData = 0b0000000000000000;
 byte ONE = 0b00000001; 
 
+boolean startCmdRec = false;
+String command = "";
+
 void setup() {
   Serial.begin(9600);
   while (!Serial);
   
-  if (!bleSerial.beginAndSetupBLE("Arduino (Peripheral)")) {
+  if (!bleSerial.beginAndSetupBLE("P1")) {
     while (true) {
       Serial.println("Failed to initialize HardwareBLESerial!");
       delay(1000);
@@ -45,17 +40,32 @@ void loop() {
   // this must be called regularly to perform BLE updates
   bleSerial.poll();
 
+  // ----------------START COMMAND: ARDUINO NANO <- ADAFRUIT BLUEFRUIT----------------
+  // wait to send data until the Bluefruit requests it
+  Serial.println("Waiting to be told to send data...");
+  while (!startCmdRec) {
+    bleSerial.poll();
 
-  
-  // figure out how to stop sending data when it is not connected 
+    // read command written to BLE UART 
+    while (bleSerial.available() > 0) {
+      int asciiNum = bleSerial.read();
+      if (asciiNum != 10) {
+        command = command + (char)asciiNum;
+      }     
+    }
+    
+    
+    // need to change P# according to what I'm coding 
+    if (command == "P1") {
+      startCmdRec = true;
+    }
 
-  
-  Serial.println("Uploading through bleuart...");
-
-  
-  //bleSerial.write(startData);   // trying to write some data
-
-
+    
+  }
+  // empty the command variable to make room for a new value
+  command = "";
+  Serial.println("P1: Sending data...");
+ 
 
   // ----------------DATA SENDING: ARDUINO NANO-> ADAFRUIT BLUEFRUIT----------------
   Serial.println("-------");  
@@ -80,11 +90,27 @@ void loop() {
   for (int i = 0; i < dataLen; i++) {
     dataFinal[i] = dataStr[i];
   }
+  dataFinal[dataLen] = '\0';
   Serial.println("Uploading through bleuart...");
   
   bleSerial.print(dataFinal);
 
 
-
+  // ----------------START COMMAND: ARDUINO NANO <- ADAFRUIT BLUEFRUIT----------------
+  // read command written to BLE UART 
+  while (bleSerial.available() > 0) {
+    int asciiNum = bleSerial.read();
+    if (asciiNum != 10) {
+      command = command + (char)asciiNum;
+    } 
+    Serial.println(command);
+  }
+  if (command == "stop") {
+    startCmdRec = false;
+    Serial.println("Stopping data transmission...");
+  }
+  
+  // empty the command variable to make room for a new value
+  command = "";
   delay(500);
 }
