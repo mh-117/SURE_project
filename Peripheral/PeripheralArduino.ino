@@ -7,6 +7,7 @@
 
 *********************************************************************/
 #include <HardwareBLESerial.h>
+#include <ArduinoBLE.h>
 
 HardwareBLESerial &bleSerial = HardwareBLESerial::getInstance();
 
@@ -60,7 +61,7 @@ void loop() {
       startCmdRec = true;
     }
 
-    
+    command = "";
   }
   // empty the command variable to make room for a new value
   command = "";
@@ -86,15 +87,16 @@ void loop() {
     j++;
   }
 
-  char dataFinal[dataLen];
+  char dataFinal[dataLen+1];
   for (int i = 0; i < dataLen; i++) {
     dataFinal[i] = dataStr[i];
   }
-  dataFinal[dataLen] = '\0';
+  dataFinal[dataLen] = ' ';
+  dataFinal[dataLen+1] = '\0';
   Serial.println("Uploading through bleuart...");
   
   bleSerial.print(dataFinal);
-
+  bleSerial.println((double)BLE.rssi());
 
   // ----------------START COMMAND: ARDUINO NANO <- ADAFRUIT BLUEFRUIT----------------
   // read command written to BLE UART 
@@ -103,7 +105,6 @@ void loop() {
     if (asciiNum != 10) {
       command = command + (char)asciiNum;
     } 
-    Serial.println(command);
   }
   if (command == "stop") {
     startCmdRec = false;
