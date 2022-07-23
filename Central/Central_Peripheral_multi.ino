@@ -1,15 +1,4 @@
 /*********************************************************************
- 
- The following code is a combination of the starting file from the 
- central_bleuart_multi example from Adafruit
- File->Examples->Adafruit Bluefruit nRF52 Libraries->Central->central_bleuart_multi
- and the Central_PeripheralBluefruit file in the Github.
- 
- This code is able to connection to multiple peripherals while also being connected
- to the Bluefruit LE Connect Application. This way it can create a channel for data
- to be sent from the peripherals and saved on the PC/iphone.
- 
- 
  This is an example for our nRF52 based Bluefruit LE modules
 
  Pick one up today in the adafruit shop!
@@ -62,6 +51,7 @@
  */
 
 #include <bluefruit.h>
+#include <Kalman.h>;
 
 // Struct containing peripheral info
 typedef struct
@@ -99,6 +89,9 @@ BLEUart bleuart;
 
 char startCmd[5]; //etc. P1 or P10
 boolean newConnection = true; //boolean to signal when a new connection is being made 
+int countRSSI = 0;
+
+Kalman myFilter(0.125,32,1023,0);
 
 
 void setup() 
@@ -284,8 +277,35 @@ void scan_callback(ble_gap_evt_adv_report_t* report)
   // Since we configure the scanner with filterUuid()
   // Scan callback only invoked for device with bleuart service advertised  
   // Connect to the device with bleuart service in advertising packet
-  Bluefruit.Central.connect(report);
+
+  // comment out the below line when testing the rssi
+  //Bluefruit.Central.connect(report);
+  Serial.print("RSSI from an advertised... ");
+  Serial.print(report->rssi);
+  Serial.println("  ");  
+  
+  rssi_send(report);
+
+  // only use when testing the rssi
+  Bluefruit.Scanner.resume();
+  
 }
+
+void rssi_send(ble_gap_evt_adv_report_t* report) {
+  //reads measurement and filter it
+  double measurement = (double) report->rssi; //read new value from rssi
+  double filteredMeasurement = myFilter.getFilteredValue(measurement);
+  
+  if (countRSSI != 550) {
+    String buf = (String)(filteredMeasurement) + '\n';
+    //String buf = (String)(report->rssi) + '\n';
+    bleuart.print(buf);
+    Serial.print(countRSSI);
+    countRSSI++;
+  }
+  return;
+}
+  
 
 /**
  * Callback invoked when an connection is established
@@ -369,9 +389,13 @@ void bleuart_rx_callback(BLEClientUart& uart_svc)
   prph_info_t* peer = &prphs[id];
 
 
+
   
   // Print sender's name
   Serial.printf("[From %s]: ", peer->name);
+  
+  //Serial.print("RSSI from an advertised... ");
+  //Serial.println(reportTemp->rssi);
 
   // Read then forward to all peripherals
   // default MTU with an extra byte for string terminator
