@@ -8,7 +8,8 @@ Goal: these boards send data wirelessly to the Adafruit Bluefruit nRF52 Feather 
 * PeripheralArduino-PB: File for initiating a connection between the Arduino Nano and Adafruit Bluefruit (specifically for testing, this file establishes Peripheral B)
 * PeripheralArduino-PC: File for initiating a connection between the Arduino Nano and Adafruit Bluefruit (specifically for testing, this file establishes Peripheral C)
 
-# Features of the Peripherals
+Features of the Peripherals
+----------
 * Each peripheral device is named "PA", "PB", "PC", etc. The peripherals wait to hear a command that is labelled with their given name. This command is controlled by the user who will type the device name in the UART terminal. Upon hearing the command, the peripheral will indicate that they are ready to send their data to the central. The user can call to multiple peripherals to send data simultaneously. A master "start" command will then need to be sent for the devices to begin sending data. Once the peripherals have sent all their data to the central, they will stop sending data but will continue to stay connected to the central. 
 * Given a "stop" command from the user, the peripherals can be manually told to stop sending data 
 * The max data packet size that can be sent is: ---
