@@ -7,6 +7,7 @@ Goal: these boards send data wirelessly to the Adafruit Bluefruit nRF52 Feather 
 * PeripheralArduino-PA: File for initiating a connection between the Arduino Nano and Adafruit Bluefruit (specifically for testing, this file establishes Peripheral A)
 * PeripheralArduino-PB: File for initiating a connection between the Arduino Nano and Adafruit Bluefruit (specifically for testing, this file establishes Peripheral B)
 * PeripheralArduino-PC: File for initiating a connection between the Arduino Nano and Adafruit Bluefruit (specifically for testing, this file establishes Peripheral C)
+* PeripheralArduino-PX: This is a template code for new peripheral. See areas with a FIX ME for sections that need to be updated according to the new peripheral's name
 
 Features of the Peripherals
 ----------
