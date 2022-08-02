@@ -3,6 +3,7 @@
  The following code is built from the dual_bleuart example from Adafruit
  File->Examples->Adafruit Bluefruit nRF52 Libraries->DualRoles->dual_bleuart
  
+ (comments below are from the original example)
  This is an example for our nRF52 based Bluefruit LE modules
 
  Pick one up today in the adafruit shop!
