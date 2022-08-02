@@ -3,7 +3,7 @@
  The following code is built from the bleuart example from Adafruit
  File->Examples->Adafruit Bluefruit nRF52 Libraries->Peripheral->bleuart
 
- (from the original example)
+ (comments below are from the original example)
  This is an example for our nRF52 based Bluefruit LE modules
 
  Pick one up today in the adafruit shop!
