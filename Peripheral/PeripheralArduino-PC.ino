@@ -128,7 +128,7 @@ void loop() {
     dataFinal[dataLen+1] = '\0';
     Serial.println("Uploading through bleuart...");
 
-    bleSerial.print("B ");
+    bleSerial.print("C ");
     bleSerial.println(dataFinal);
     //bleSerial.println((double)BLE.rssi());
   } else {
