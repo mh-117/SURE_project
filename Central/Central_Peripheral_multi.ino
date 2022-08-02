@@ -1,4 +1,20 @@
 /*********************************************************************
+ 
+ The following code is a combination of code built from the dual_bleuart 
+ example from Adafruit accessed via:
+ File->Examples->Adafruit Bluefruit nRF52 Libraries->DualRoles->dual_bleuart
+ and code built from the central_bleuart_multi example from Adafruit 
+ accessed via:
+  File->Examples->Adafruit Bluefruit nRF52 Libraries->Central->central_bleuart_multi
+
+  NOTE: the only places where code was adjusted or added were in the following callbacks/functions:
+  - prph_bleuart_rx_callback
+  - scan_callback
+  - rssi_send
+  - bleuart_rx_callback
+  - sendAll
+
+ (comments below are from the original example)
  This is an example for our nRF52 based Bluefruit LE modules
 
  Pick one up today in the adafruit shop!
@@ -51,7 +67,7 @@
  */
 
 #include <bluefruit.h>
-#include <Kalman.h>;
+#include <Kalman.h>;    // used for filtering the RSSI values (however was deemed not entirely helpful)
 
 // Struct containing peripheral info
 typedef struct
@@ -90,8 +106,9 @@ BLEUart bleuart;
 char startCmd[5]; //etc. P1 or P10
 boolean newConnection = true; //boolean to signal when a new connection is being made 
 int countRSSI = 0;
+int pointCounter = 0;
 
-Kalman myFilter(0.125,32,1023,0);
+//Kalman myFilter(0.125,32,1023,0);  // used for filtering the RSSI values
 
 
 void setup() 
@@ -234,8 +251,9 @@ void prph_bleuart_rx_callback(uint16_t conn_handle)
       startCmd[i] = (char)str[i];
     }    
   }
-  
-  // if P1, put \0 in 3rd slot. if P10, put \0 in 4th slot
+
+  // verifying a null terminator character is placed so that the string can end
+  // determine where the end of the string is and place a null terminator 
   if(startCmd[2] == 0) {
     startCmd[2] = '\0';
   } else if (startCmd[3] == 0) {
@@ -247,21 +265,9 @@ void prph_bleuart_rx_callback(uint16_t conn_handle)
   // -------------- START COMMAND: Extracting the start command from Mobile --------------
   // Forward the command from Mobile to our peripherals 
   sendAll(startCmd);
-  /*
-  // Forward command from Mobile to our peripheral
-  if ( clientUart.discovered() )
-  {
-    clientUart.print(startCmd);
-  }else
-  {
-    bleuart.println("[Prph] Central role not connected");
-  }
-  */
-  memset(startCmd,0,sizeof(startCmd));
+
+  memset(startCmd,0,sizeof(startCmd));    // clear the startCmd variable 
 }
-
-
-
 
 
 /*------------------------------------------------------------------*/
@@ -278,27 +284,37 @@ void scan_callback(ble_gap_evt_adv_report_t* report)
   // Scan callback only invoked for device with bleuart service advertised  
   // Connect to the device with bleuart service in advertising packet
 
-  // comment out the below line when testing the rssi
-  //Bluefruit.Central.connect(report);
+// FOR RSSI TESTING: comment out the below line so that the central doesn't connect to the advertising peripheral
+  Bluefruit.Central.connect(report);
+  
   Serial.print("RSSI from an advertised... ");
   Serial.print(report->rssi);
   Serial.println("  ");  
-  
-  rssi_send(report);
 
-  // only use when testing the rssi
+// FOR RSSI TESTING: uncomment function call
+  //rssi_send(report);
+
+  // Only essential when testing the rssi
   Bluefruit.Scanner.resume();
   
 }
 
+/**
+ * Helper function for RSSI testing 
+ * countRSSI: variable used to control how many RSSI values get printed (in testing, since this function is called
+ * as soon as a peripheral is advertising, provide a buffer of +50 to allow for time to connect to the central
+ * from the bluetooth app. Then post process in MATLAB to grab the last x values you want to gather)
+ * 
+ * Currently the commented out code was used when involving that Kalman filter (which was later deemed as not needed)
+ */
 void rssi_send(ble_gap_evt_adv_report_t* report) {
   //reads measurement and filter it
-  double measurement = (double) report->rssi; //read new value from rssi
-  double filteredMeasurement = myFilter.getFilteredValue(measurement);
+  //double measurement = (double) report->rssi; //read new value from rssi
+  //double filteredMeasurement = myFilter.getFilteredValue(measurement);
   
-  if (countRSSI != 550) {
-    String buf = (String)(filteredMeasurement) + '\n';
-    //String buf = (String)(report->rssi) + '\n';
+  if (countRSSI != 1050) {
+    //String buf = (String)(filteredMeasurement) + '\n';
+    String buf = (String)(report->rssi) + '\n';
     bleuart.print(buf);
     Serial.print(countRSSI);
     countRSSI++;
@@ -387,41 +403,23 @@ void bleuart_rx_callback(BLEClientUart& uart_svc)
 
   int id = findConnHandle(conn_handle);
   prph_info_t* peer = &prphs[id];
-
-
-
-  
+ 
   // Print sender's name
   Serial.printf("[From %s]: ", peer->name);
-  
-  //Serial.print("RSSI from an advertised... ");
-  //Serial.println(reportTemp->rssi);
 
   // Read then forward to all peripherals
   // default MTU with an extra byte for string terminator
   char buf[20+1] = { 0 };
+  char finalBuf[34+1] = { 0 };
+  int starT = 0;
   while ( uart_svc.available() ){
-    if ( uart_svc.read(buf,sizeof(buf)-1) )
-    {
-      Serial.println(buf);
-      //sendAll(buf);
-      //bleuart.println();    // use this to create columns for the data
-      bleuart.print(buf);
-      //bleuart.print(" ");   // provide a gap in between the data
-      
+    if ( uart_svc.read(buf,sizeof(buf)-1) ) {  
+      Serial.println(buf); bleuart.print(buf);    
     } 
   } 
-
   
-  /* 
-  if ( bleuart.notifyEnabled() ) {
-      // Forward data from our peripheral to Mobile
-      bleuart.print( buf );
-      bleuart.print(" ");   // provide a gap in between the data
-      bleuart.println();    // use this to create columns for the data
-  } 
-  */
 }
+
 
 /**
  * Helper function to send a string to all connected peripherals
@@ -446,8 +444,6 @@ void sendAll(const char* str)
     startCmd[4] = '\0';
   }
 
-  Serial.print("Start command: ");
-  Serial.println(startCmd);
   
   for(uint8_t id=0; id < BLE_MAX_CONNECTION; id++)
   {
@@ -459,7 +455,7 @@ void sendAll(const char* str)
       Serial.println("Command being sent");
     }
   }
-  memset(startCmd,0,sizeof(startCmd));
+  memset(startCmd,0,sizeof(startCmd));      // clear the startCmd
 }
 
 void loop()
