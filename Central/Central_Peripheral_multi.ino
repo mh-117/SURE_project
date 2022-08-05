@@ -67,7 +67,7 @@
  */
 
 #include <bluefruit.h>
-#include <Kalman.h>;    // used for filtering the RSSI values (however was deemed not entirely helpful)
+#include <Kalman.h>    // used for filtering the RSSI values (however was deemed not entirely helpful)
 
 // Struct containing peripheral info
 typedef struct
@@ -122,10 +122,12 @@ void setup()
 
   Serial.println("Bluefruit52 Dual Role Multi BLEUART Example");
   Serial.println("-----------------------------------------\n");
-  
+
+// FIX ME: Change the 2nd parameter when adding more peripherals
+// Read: As a peripheral, how many devices am I being connected to. As a central, how many devices am I connecting to.
   // Initialize Bluefruit with max concurrent connections as Peripheral = 1, Central = 2
   // SRAM usage required by SoftDevice will increase with number of connections
-  Bluefruit.begin(1, 2);
+  Bluefruit.begin(1,2);
   Bluefruit.setTxPower(4);    // Check bluefruit.h for supported values
 
   // Set Name
@@ -169,7 +171,7 @@ void setup()
   Bluefruit.Scanner.setRxCallback(scan_callback);
   Bluefruit.Scanner.restartOnDisconnect(true);
   Bluefruit.Scanner.setInterval(160, 80);       // in units of 0.625 ms
-  Bluefruit.Scanner.filterUuid(BLEUART_UUID_SERVICE);
+  Bluefruit.Scanner.filterUuid(BLEUART_UUID_SERVICE);     // NOTE: this filter ensures that only devices using the bleuart service are being connected
   Bluefruit.Scanner.useActiveScan(false);       // Don't request scan response data
   Bluefruit.Scanner.start(0);                   // 0 = Don't stop scanning after n seconds
 
